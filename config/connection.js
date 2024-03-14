@@ -1,18 +1,14 @@
-require('dotenv').config();
-const mysql = require('mysql2');
+// db/index.js or config/connection.js
 
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
+require('dotenv').config(); // This loads the environment variables from the .env file
+const { Pool } = require('pg');
+
+const pool = new Pool({
   user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
   database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
-connection.connect(error => {
-  if (error) {
-    return console.error('error: ' + error.message);
-  }
-  console.log('Connected to the MySQL server.');
-});
-
-module.exports = connection;
+module.exports = pool;
