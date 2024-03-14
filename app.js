@@ -10,12 +10,6 @@ const {
   addEmployee,
   updateEmployeeRole
 } = require('./lib/queries');
-const {
-  addDepartmentPrompt,
-  addRolePrompt,
-  addEmployeePrompt,
-  updateEmployeeRolePrompt
-} = require('./lib/prompts');
 
 async function mainMenu() {
   try {
@@ -46,196 +40,117 @@ async function mainMenu() {
         await displayEmployees();
         break;
       case 'Add Department':
-        await promptAddDepartment();
+        await promptForDepartmentDetails();
         break;
       case 'Add Role':
-        await promptAddRole();
+        await promptForRoleDetails();
         break;
       case 'Add Employee':
-        await promptAddEmployee();
+        await promptForEmployeeDetails();
         break;
       case 'Update Employee Role':
-        await promptUpdateEmployeeRole();
+        await promptForEmployeeRoleUpdate();
         break;
       case 'Exit':
         console.log('Exiting the application. Goodbye!');
-        process.exit();
+        return; // Prevents the recursive call after exit
     }
 
-    // Recursively call mainMenu to allow further operations
-    await mainMenu();
+    await mainMenu(); // Recursively call mainMenu to allow further operations
   } catch (err) {
     console.error('An error occurred:', err);
   }
 }
 
 async function displayDepartments() {
-  try {
-    const results = await getDepartments();
-    console.table(results);
-  } catch (err) {
-    console.error(err);
-  }
+  const results = await getDepartments();
+  console.table(results);
 }
 
 async function displayRoles() {
-  // Placeholder for your implementation
+  const results = await getRoles();
+  console.table(results);
 }
 
 async function displayEmployees() {
-  // Placeholder for your implementation
+  const results = await getEmployees();
+  console.table(results);
 }
 
-async function promptAddDepartment() {
-  try {
-    const { departmentName } = await addDepartmentPrompt();
-    await addDepartment(departmentName);
-    console.log('Department added successfully!');
-  } catch (err) {
-    console.error(err);
-  }
+async function promptForDepartmentDetails() {
+  const { departmentName } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'departmentName',
+      message: "What is the department's name?",
+      validate: input => input ? true : 'Please enter a department name.'
+    }
+  ]);
+  
+  await addDepartment(departmentName);
+  console.log(`Department '${departmentName}' added successfully!`);
 }
 
-async function promptAddRole() {
-  try {
-    // Fetch departments to let the user choose which department the role belongs to
-    const departments = await getDepartments();
-    const departmentChoices = departments.map(({ id, name }) => ({
-      name: name,
-      value: id
-    }));
+async function promptForRoleDetails() {
+  const departments = await getDepartments();
+  const departmentChoices = departments.map(({ id, name }) => ({ name, value: id }));
+  const { title, salary, departmentId } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'title',
+      message: "What is the role's title?",
+      validate: input => input ? true : 'Please enter a role title.'
+    },
+    {
+      type: 'input',
+      name: 'salary',
+      message: "What is the role's salary?",
+      validate: input => input && !isNaN(input) ? true : 'Please enter a valid salary.'
+    },
+    {
+      type: 'list',
+      name: 'departmentId',
+      message: "Which department does the role belong to?",
+      choices: departmentChoices
+    }
+  ]);
 
-    // Ask for the new role details
-    const roleDetails = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'title',
-        message: 'What is the title of the new role?',
-        validate: input => input ? true : 'Please enter a title.'
-      },
-      {
-        type: 'input',
-        name: 'salary',
-        message: 'What is the salary for this role?',
-        validate: input => !isNaN(parseFloat(input)) && isFinite(input) ? true : 'Please enter a valid salary.'
-      },
-      {
-        type: 'list',
-        name: 'departmentId',
-        message: 'Which department does this role belong to?',
-        choices: departmentChoices,
-        validate: input => input ? true : 'Please select a department.'
-      }
-    ]);
-
-    // Call the query function to add the new role to the database
-    await addRole(roleDetails.title, roleDetails.salary, roleDetails.departmentId);
-    console.log(`Role '${roleDetails.title}' added successfully!`);
-  } catch (err) {
-    console.error('Failed to add the new role:', err);
-  }
+  await addRole(title, salary, departmentId);
+  console.log(`Role '${title}' added successfully!`);
 }
 
+async function promptForEmployeeDetails() {
+  const roles = await getRoles();
+  const employees = await getEmployees();
+  const roleChoices = roles.map(({ id, title }) => ({ name: title, value: id }));
+  const managerChoices = [{ name: 'None', value: null }, ...employees.map(({ id, first_name, last_name }) => ({ name: `${first_name} ${last_name}`, value: id }))];
+  const { firstName, lastName, roleId, managerId } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'firstName',
+      message: "What is the employee's first name?",
+      validate: input => input ? true : 'Please enter a first name.'
+    },
+    {
+      type: 'input',
+      name: 'lastName',
+      message: "What is the employee's last name?",
+      validate: input => input ? true : 'Please enter a last name.'
+    },
+    {
+      type: 'list',
+      name: 'roleId',
+      message: "What is the employee's role?",
+      choices: roleChoices
+    },
+    {
+      type: 'list',
+      name: 'managerId',
+      message: "Who is the employee's manager?",
+      choices: managerChoices
+    }
+  ]);
 
-async function promptAddEmployee() {
-  try {
-    // Fetch roles and employees for the user to choose from
-    const roles = await getRoles();
-    const employees = await getEmployees();
-    
-    const roleChoices = roles.map(({ id, title }) => ({
-      name: title,
-      value: id
-    }));
-
-    const managerChoices = employees.map(({ id, first_name, last_name }) => ({
-      name: `${first_name} ${last_name}`,
-      value: id
-    }));
-    // Optionally add an option for no manager
-    managerChoices.push({ name: 'None', value: null });
-
-    // Ask for the new employee's details
-    const employeeDetails = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'firstName',
-        message: "What is the employee's first name?",
-        validate: input => input ? true : 'Please enter a first name.'
-      },
-      {
-        type: 'input',
-        name: 'lastName',
-        message: "What is the employee's last name?",
-        validate: input => input ? true : 'Please enter a last name.'
-      },
-      {
-        type: 'list',
-        name: 'roleId',
-        message: "What is the employee's role?",
-        choices: roleChoices,
-        validate: input => input ? true : 'Please select a role.'
-      },
-      {
-        type: 'list',
-        name: 'managerId',
-        message: "Who is the employee's manager?",
-        choices: managerChoices,
-        validate: input => input ? true : 'Please select a manager.'
-      }
-    ]);
-
-    // Call the query function to add the new employee to the database
-    await addEmployee(employeeDetails.firstName, employeeDetails.lastName, employeeDetails.roleId, employeeDetails.managerId);
-    console.log(`Employee '${employeeDetails.firstName} ${employeeDetails.lastName}' added successfully!`);
-  } catch (err) {
-    console.error('Failed to add the new employee:', err);
-  }
+  await addEmployee(firstName, lastName, roleId, managerId);
+  console.log(`Employee '${firstName} ${lastName}' added successfully!`); // This line was missing
 }
-
-
-async function promptUpdateEmployeeRole() {
-  try {
-    // Fetch roles and employees to present options to the user
-    const roles = await getRoles();
-    const employees = await getEmployees();
-
-    const roleChoices = roles.map(({ id, title }) => ({
-      name: title,
-      value: id
-    }));
-
-    const employeeChoices = employees.map(({ id, first_name, last_name }) => ({
-      name: `${first_name} ${last_name}`,
-      value: id
-    }));
-
-    // Prompt user to choose an employee and a new role
-    const { employeeId, roleId } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'employeeId',
-        message: "Which employee's role do you want to update?",
-        choices: employeeChoices,
-        validate: input => input ? true : 'Please select an employee.'
-      },
-      {
-        type: 'list',
-        name: 'roleId',
-        message: "What is the employee's new role?",
-        choices: roleChoices,
-        validate: input => input ? true : 'Please select a role.'
-      }
-    ]);
-
-    // Call the query function to update the employee's role in the database
-    await updateEmployeeRole(employeeId, roleId);
-    console.log(`Employee's role updated successfully!`);
-  } catch (err) {
-    console.error('Failed to update the employee role:', err);
-  }
-}
-
-
-// Start the application
-mainMenu();
