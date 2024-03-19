@@ -53,6 +53,7 @@ async function mainMenu() {
         break;
       case 'Exit':
         console.log('Exiting the application. Goodbye!');
+        process.exit()
         return; // Prevents the recursive call after exit
     }
 
@@ -154,3 +155,4 @@ async function promptForEmployeeDetails() {
   await addEmployee(firstName, lastName, roleId, managerId);
   console.log(`Employee '${firstName} ${lastName}' added successfully!`); // This line was missing
 }
+mainMenu()

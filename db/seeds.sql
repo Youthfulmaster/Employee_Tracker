@@ -1,4 +1,5 @@
 -- Insert sample data into 'department'
+\c employeetracker_db
 INSERT INTO department (name) VALUES 
 ('Human Resources'),
 ('Engineering'),
