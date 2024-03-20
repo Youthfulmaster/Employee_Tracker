@@ -155,4 +155,31 @@ async function promptForEmployeeDetails() {
   await addEmployee(firstName, lastName, roleId, managerId);
   console.log(`Employee '${firstName} ${lastName}' added successfully!`); // This line was missing
 }
+async function promptForEmployeeRoleUpdate() {
+  // Retrieve necessary data for the update (e.g., list of employees and roles)
+  const employees = await getEmployees();
+  const roles = await getRoles();
+  
+  // Use inquirer to prompt the user for which employee and what new role
+  const { employeeId, roleId } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'employeeId',
+      message: 'Which employee\'s role would you like to update?',
+      choices: employees.map(employee => ({ name: `${employee.first_name} ${employee.last_name}`, value: employee.id }))
+    },
+    {
+      type: 'list',
+      name: 'roleId',
+      message: 'What is the new role?',
+      choices: roles.map(role => ({ name: role.title, value: role.id }))
+    }
+  ]);
+
+  // Call a function to perform the update in the database
+  await updateEmployeeRole(employeeId, roleId);
+
+  console.log('Employee role updated successfully!');
+}
+
 mainMenu()
