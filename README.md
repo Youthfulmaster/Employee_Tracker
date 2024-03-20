@@ -17,7 +17,7 @@ copy ssh
 
 ## Usage
 First run npm, then go to db and through postgres make the schema then run the seed after you do that you can use the command node server.js to use the app
-
+User video [https://screenrec.com/share/r8dxOKPTYf]
 ## License
 This project is licensed under the MIT license.
 
